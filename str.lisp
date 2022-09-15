@@ -52,6 +52,7 @@
   #:replace-all
   #:replace-using
   #:concat
+  #:whitespacep
   #:emptyp
   #:non-empty-string-p
   #:non-blank-string-p
@@ -140,6 +141,13 @@
 
 (defvar *whitespaces* '(#\Space #\Newline #\Backspace #\Tab
                         #\Linefeed #\Page #\Return #\Rubout))
+
+(defun whitespacep (character)
+  (when (member character *whitespaces*)
+    t))
+
+(deftype whitespace-c ()
+  '(and character (satisifies whitespacep)))
 
 (defvar +version+ (asdf:component-version (asdf:find-system "str")))
 
@@ -352,6 +360,55 @@ It uses `subseq' with differences:
                  1))
     (setf s (str:replace-all (nth i plist) (nth (incf i) plist) s)))
   s)
+
+(defun to-character (c)
+  (cond ((typep c '(integer 0 9))
+         (character (write-to-string c)))
+        (t
+         (character c))))
+
+(defun charp (c)
+  "Is it a character, 1 string 1 symbol 1 number"
+  (when (or (typep c '(integer 0 9))
+            (and (typep c '(simple-array * (1)))
+                 (character (aref c 1)))
+            (and (typep c 'symbol)
+                 (= 1 (length (symbol-name c))))
+            (characterp c))
+    t))
+
+
+(defun charp2 (c)
+  (if (character c) t nil)
+  )
+
+(defun whitespacep (c)
+  "Is c a whitespace-character / string"
+  (cond ((typep c '(simple-array character (1)))
+         (and (member (character c) *whitespaces*)
+              t))
+        ((not (characterp c))
+         (warn "~a is not a character" c))
+        ((member c *whitespaces*)
+         t)
+        (t
+         nil)))
+
+(defun whitespacep (c)
+  "Is c a whitespace-character / string"
+  (typecase c
+    (character (when (member c *whitespaces*)
+                 t))
+    ((simple-array character (1))
+     (whitespacep (aref c 1)))
+    (integer (
+    
+    
+        ((not (characterp c))
+         (warn "~a is not a character" c))
+
+        (t
+         nil)))
 
 (defun emptyp (s)
   "Is s nil or the empty string ?"
