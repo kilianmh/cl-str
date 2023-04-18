@@ -222,33 +222,42 @@
                   string/char
                   (subseq s index)))))
 
-(defun split (separator s &key (omit-nulls *omit-nulls*) limit (start 0) end)
+(defun split (separator s &key (omit-nulls *omit-nulls*) limit (start 0) end regex)
   "Split s into substring by separator (cl-ppcre takes a regex, we do not).
 
   `limit' limits the number of elements returned (i.e. the string is
-  split at most `limit' - 1 times)."
-  ;; cl-ppcre:split doesn't return a null string if the separator appears at the end of s.
+  split at most `limit' - 1 times).
+  If regex is non-nil the separator is interpreted as regular expression.
+  cl-ppcre:split doesn't return a null string if the separator appears at the end of s."
   (let* ((limit (or limit (1+ (length s))))
-         (res (ppcre:split `(:sequence ,(string separator)) s :limit limit :start start :end end)))
+         (res (ppcre:split (if regex
+                               separator
+                               `(:sequence ,(string separator)))
+                           s
+                           :limit limit :start start :end end)))
     (if omit-nulls
         (remove-if (lambda (it) (emptyp it)) res)
         res)))
 
-(defun rsplit (sep s &key (omit-nulls *omit-nulls*) limit)
+(defun rsplit (sep s &key (omit-nulls *omit-nulls*) limit regex)
   "Similar to `split`, except we split from the end. In particular,
-the results will be be different when `limit` is provided."
+the results might be different when `limit` is provided and when
+separator is a regular expression (regex parameter non-nil)"
   (nreverse
-   (mapcar 'nreverse
-           (split (reverse (string sep)) (reverse s)
+   (mapcar #'nreverse
+           (split (if regex
+                      sep
+                      (reverse (string sep)))
+                  (reverse s)
                   :omit-nulls omit-nulls
+                  :regex regex
                   :limit limit))))
 
-(defun split-omit-nulls (separator s)
-  "Call split with :omit-nulls to t.
-
-   Can be clearer in certain situations.
-  "
-  (split separator s :omit-nulls t))
+(defun split-omit-nulls (separator s &key regex)
+  "Call split with :omit-nulls set to t.
+  Can be clearer in certain situations.
+  If regex is non-nil the separator is interpreted as regular expression."
+  (split separator s :omit-nulls t :regex regex))
 
 (defun substring (start end s)
   "Return the substring of `s' from `start' to `end'.
